@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:download_files/model/file_model.dart';
 import 'package:flowder/flowder.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
@@ -13,11 +12,46 @@ class DownloadNotifier extends ChangeNotifier {
   String? path;
   DownloaderUtils? options;
   DownloaderCore? core;
-  bool isLoading = false;
+  // bool isLoading = false;
+  double progress = 0;
+  List<FileModel> fileList = [];
+
+  bool isPaused = false;
+
   Ref ref;
   DownloadNotifier({
     required this.ref,
   });
+
+  generateFiles() {
+    fileList
+      ..add(FileModel(
+        fileName: "loremipsum.pdf",
+        url:
+            "https://assets.website-files.com/603d0d2db8ec32ba7d44fffe/603d0e327eb2748c8ab1053f_loremipsum.pdf",
+        progress: 0.0,
+        icon: Icons.picture_as_pdf,
+      ))
+      ..add(FileModel(
+        fileName: "music.mp3",
+        url: "https://cdn.pixabay.com/audio/2023/02/03/audio_534a89f910.mp3",
+        progress: 0.0,
+        icon: Icons.my_library_music_rounded,
+      ))
+      ..add(FileModel(
+        fileName: "image.jpg",
+        url:
+            "https://cdn.pixabay.com/photo/2019/03/28/20/22/owl-4087984_960_720.png",
+        progress: 0.0,
+        icon: Icons.image,
+      ))
+      ..add(FileModel(
+        fileName: "5MB.rar",
+        url: "http://ipv4.download.thinkbroadband.com/5MB.zip",
+        progress: 0.0,
+        icon: Icons.folder_zip,
+      ));
+  }
 
   Future<bool> setPath() async {
     Directory? directory;
@@ -72,27 +106,74 @@ class DownloadNotifier extends ChangeNotifier {
     }
   }
 
-  Future<bool> downloadFile(String url, double progress, int index) async {
-    final list = ref.read(fileProvider);
+  void downloadFile(String url, int index) async {
+    options = DownloaderUtils(
+      progress: ProgressImplementation(),
+      file: File('$path/myFile.${url.split('.').last}'),
+      onDone: () {
+        fileList[index].progress = 0;
+        OpenFile.open('$path/myFile.${url.split('.').last}');
+        notifyListeners();
+      },
+      progressCallback: (current, total) {
+        final progress = (current / total);
+        fileList[index].progress = progress;
+        notifyListeners();
+        print('Downloading: ${(fileList[index].progress!) * 100}');
+      },
+    );
     try {
-      options = DownloaderUtils(
+      core = await Flowder.download(url, options!);
+
+      notifyListeners();
+    } on Exception catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
+  cancelDownload(int index) async {
+    core!.cancel();
+    fileList[index].progress = 0;
+    print('canceled');
+    notifyListeners();
+  }
+
+  pauseDownload() {
+    isPaused = true;
+    notifyListeners();
+    core!.pause();
+    print('pused');
+    notifyListeners();
+  }
+
+  resumeDownload() {
+    isPaused = false;
+    notifyListeners();
+    core!.resume();
+    print('resumed');
+
+    notifyListeners();
+  }
+
+  Future<bool> downloadFile2(String url) async {
+    try {
+      final options = DownloaderUtils(
         progress: ProgressImplementation(),
         file: File('$path/myFile.${url.split('.').last}'),
         onDone: () {
           progress = 0;
-          list[index].progress = 0;
           OpenFile.open('$path/myFile.${url.split('.').last}');
           notifyListeners();
         },
         progressCallback: (current, total) {
-          progress = (current / total);
-          list[index].progress = progress;
+          final progress = (current / total);
+          this.progress = progress;
           notifyListeners();
           print('Downloading: ${progress * 100}');
         },
       );
-
-      core = await Flowder.download(url, options!);
+      core = await Flowder.download(url, options);
+      print(await options.progress.getProgress(url));
       notifyListeners();
     } on Exception catch (e) {
       debugPrint(e.toString());

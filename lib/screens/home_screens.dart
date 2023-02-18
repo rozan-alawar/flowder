@@ -1,6 +1,6 @@
 import 'package:download_files/common/widgets/item.dart';
 import 'package:download_files/controller/downloade_provider.dart';
-import 'package:download_files/model/file_model.dart';
+import 'package:download_files/screens/download_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,30 +22,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
 
     initPlatformState();
+    ref.read(downloadProvider.notifier).generateFiles();
+  }
+
+  List<Widget> generateItems() {
+    List<Widget> items = [];
+
+    ref.watch(downloadProvider).fileList.asMap().forEach((index, value) {
+      items.add(ItemWidget(
+        index: index,
+        icon: value.icon!,
+        url: value.url!,
+        progress: value.progress!,
+        title: value.fileName!,
+      ));
+    });
+    return items;
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = ref.watch(downloadProvider);
-    final files = ref.watch(fileProvider);
-
-    List<Widget> generateItems() {
-      List<Widget> items = [];
-
-      files.asMap().forEach((index, value) {
-        items.add(ItemWidget(
-          index: index,
-          icon: value.icon!,
-          url: value.url!,
-          progress: value.progress!,
-          title: value.fileName!,
-        ));
-      });
-      return items;
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Files')),
+      appBar: AppBar(
+        title: const Text('Files'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DownloadScreen(),
+                  ));
+            },
+            icon: const Icon(
+              Icons.navigate_next_rounded,
+            ),
+          ),
+          const SizedBox(width: 10)
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -55,3 +70,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
+
+// final fileProvider = Provider((ref) => fileList);

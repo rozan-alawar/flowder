@@ -41,6 +41,8 @@ dependencies:
   open_file: ^3.2.1
   percent_indicator: ^4.2.2
   permission_handler: ^10.2.0
+  # provider: ^6.0.5
+  # get_it: ^7.2.0
 
 dev_dependencies:
   flutter_test:
